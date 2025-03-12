@@ -157,7 +157,7 @@ fig = figure('Name', 'Reflection', ...
 colors = ["r", "k", "b"];
 
 ax1 = subplot(1,2,1);  title(ax1, 'Tissue thickness 1 cm');
-xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Transmission');
+xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Reflection');
 hold(ax1, 'on');
 ax2 = subplot(1,2,2);  title(ax2, 'Tissue thickness 1 cm');
 xlabel(ax2, 'Frequency (GHz)');  ylabel(ax2, 'Phase (deg)');
