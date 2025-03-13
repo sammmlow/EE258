@@ -76,7 +76,7 @@ colors = {[0.4350 0.0780 0.0840], ... % Red 1
           [0.3000 0.4470 0.9810]};    % Blue 2
 
 % Loop through each model parameter for low and medium water content.
-for k = 1:3
+for k = 1:2
 
     % Set the color according to the tissue type.
     if k == 1
@@ -116,7 +116,7 @@ for k = 1:3
     
     % Refractive index
     nd = sqrt(epsd);
-    nd0 = sqrt(epsd_f0)
+    nd0 = sqrt(epsd_f0);
     kappa = -imag(nd);  % UNUSED
 
     % Compute the propagation constant.
@@ -212,8 +212,8 @@ for k = 1:3
         fig2 = figure(id + 2);
         subplot(2,1,1);
         plot(t.*1e9, real(s_filtered), 'k-'); hold on; grid on;
-        title('Normalized match filter output of transmitted chirp pulse');
-        xlabel('Time (ns)'); ylabel('Normalized output');
+        title('Match filter output of transmitted chirp pulse');
+        xlabel('Time (ns)'); ylabel('Matched filter output');
 
         % Plot match filtered output of the noisy received signal
         subplot(2,1,2); 
@@ -228,7 +228,7 @@ for k = 1:3
             Color=colors{colorIdx+1});
         title(sprintf(['Match filter output of received ' ...
             'signal, h = %.1f cm, SNR = %.1f dB'], h(1).*1e2, SNR));
-        xlabel('Time (ns)'); ylabel('Normalized output'); legend show;
+        xlabel('Time (ns)'); ylabel('Matched filter output'); legend show;
         legend('Location', 'southeast');
 
         % % Compute what is the expected time of flight of the direct LOS
