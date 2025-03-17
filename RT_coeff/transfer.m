@@ -55,6 +55,7 @@ end
 dBp = @(x) 10 .* log10(x);
 dBa = @(x) 20 .* log10(x);
 
+
 %% Dielectric property
 
 %%% Compute relative permissivity for each material %%%
@@ -89,15 +90,8 @@ end
 linkaxes([ax1, ax2], 'x');
 
 legend(ax1, {"Low water content", "Medium water content", "High water content"});
-exportgraphics(fig, '../Figures/cole.png', 'Resolution', 300);
+% exportgraphics(fig, '../Figures/cole.png', 'Resolution', 300);
 
-% plot(real(epsd), -imag(epsd), 'k-');
-% xlabel('$\epsilon^*_{R}$', 'Interpreter', 'latex', 'FontSize', 20);
-% ylabel('$\epsilon^*_{I}$', 'Interpreter', 'latex', 'FontSize', 20);
-
-% ax2 = subplot(1,2,2);  plot(f./1e9, -w.*eps0.*imag(epsd), 'k-');
-% xlabel('Frequency (GHz)');  title('Effective Conductivity');
-% ylabel('$\sigma$ (S/m)', 'Interpreter', 'latex', 'FontSize', 20);
 
 %% Transfer function (Normal incidence)
 
@@ -113,16 +107,20 @@ for i = 1:numel(materialNames)
     R_ = (1 - nd_) ./ (1 + nd_);    % Reflection coeff. (air -> tissue)
 
     % Transfer function
-    lambda = c0 ./ f;  exp_gamma = exp(-1j*2*pi.*h./lambda.*nd_);
+    lambda = c0 ./ f;  
+    exp_gamma = exp(-1j*2*pi.*h./lambda.*nd_);
     HT_ = (1-R_.^2) .* exp_gamma ./ (1 - (R_.*exp_gamma).^2);
     HR_ = R_ .* (1 - exp_gamma.^2) ./ (1 - (R_.*exp_gamma).^2);
+
+    % Transmission with propagation phase removed (ref: fmax)
+    HT2_ = HT_ ./ exp(-1j*2*pi*h./lambda.*real(nd_(end)));
 
     % Power coefficients
     Rp_ = abs(HR_).^2;  Tp_ = abs(HT_).^2;
 
     % Store results
     nd.(matName) = nd_;  R.(matName) = R_;
-    HT.(matName) = HT_;  HR.(matName) = HR_;
+    HT.(matName) = HT_;  HR.(matName) = HR_;  HT2.(matName) = HT2_;
     Tp.(matName) = Tp_;  Rp.(matName) = Rp_;
 
 end
@@ -130,47 +128,51 @@ end
 
 %%% Plot transfer function (amplitude & phase) %%%
 
+% Plot thickness
+ind_h = 1;
+title_str = sprintf('Tissue thickness %d cm', h(ind_h)*1e2);
+
 fig = figure('Name', 'Transmission', ...
     'Position', [100 100 900 350], 'Units', 'pixels');
-colors = ["r", "k", "b"];
 
-ax1 = subplot(1,2,1);  title(ax1, 'Tissue thickness 1 cm');
-xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Transmission');
+ax1 = subplot(1,2,1);  title(ax1, title_str);
+xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Transmission (dB)');
 hold(ax1, 'on');
-ax2 = subplot(1,2,2);  title(ax2, 'Tissue thickness 1 cm');
+ax2 = subplot(1,2,2);  title(ax2, title_str);
 xlabel(ax2, 'Frequency (GHz)');  ylabel(ax2, 'Phase (deg)');
 hold(ax2, 'on');
 
 for i = 1:numel(materialNames)
     matName = materialNames{i};
-    plot(ax1, f./1e9, abs(HT.(matName)(1,:)), 'Color', colors(i));
-    plot(ax2, f./1e9, rad2deg(angle(HT.(matName)(1,:))), 'Color', colors(i));
+    plot(ax1, f./1e9, dBa(abs(HT.(matName)(ind_h,:))), 'Color', colors(i));
+    plot(ax2, f./1e9, rad2deg(angle(HT2.(matName)(ind_h,:))), 'Color', colors(i));
 end
-linkaxes([ax1, ax2], 'x');  ylim(ax2, [-182, 182]);
+linkaxes([ax1, ax2], 'x');  ylim(ax1, [-30, 0]);  ylim(ax2, [-150, 150]);
 
-legend(ax1, {"Low water content", "Medium water content", "High water content"});
+legend(ax1, {"Low water content", "Medium water content", "High water content"}, ...
+     'Location', 'best');
 % exportgraphics(fig, '../Figures/transfer_T.png', 'Resolution', 300);
 
 
 fig = figure('Name', 'Reflection', ...
     'Position', [100 100 900 350], 'Units', 'pixels');
-colors = ["r", "k", "b"];
 
-ax1 = subplot(1,2,1);  title(ax1, 'Tissue thickness 1 cm');
-xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Reflection');
+ax1 = subplot(1,2,1);  title(ax1, title_str);
+xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Reflection (dB)');
 hold(ax1, 'on');
-ax2 = subplot(1,2,2);  title(ax2, 'Tissue thickness 1 cm');
+ax2 = subplot(1,2,2);  title(ax2, title_str);
 xlabel(ax2, 'Frequency (GHz)');  ylabel(ax2, 'Phase (deg)');
 hold(ax2, 'on');
 
 for i = 1:numel(materialNames)
     matName = materialNames{i};
-    plot(ax1, f./1e9, abs(HR.(matName)(1,:)), 'Color', colors(i));
-    plot(ax2, f./1e9, wrapTo360(rad2deg(angle(HR.(matName)(1,:)))), 'Color', colors(i));
+    plot(ax1, f./1e9, dBa(abs(HR.(matName)(ind_h,:))), 'Color', colors(i));
+    plot(ax2, f./1e9, wrapTo360(rad2deg(angle(HR.(matName)(ind_h,:)))), 'Color', colors(i));
 end
-linkaxes([ax1, ax2], 'x');  ylim(ax2, [90, 270]);
+linkaxes([ax1, ax2], 'x');  ylim(ax2, [120, 240]);
 
-legend(ax1, {"Low water content", "Medium water content", "High water content"});
+legend(ax1, {"Low water content", "Medium water content", "High water content"}, ...
+     'Location', 'best');
 % exportgraphics(fig, '../Figures/transfer_R.png', 'Resolution', 300);
 
 
@@ -178,25 +180,49 @@ legend(ax1, {"Low water content", "Medium water content", "High water content"})
 
 fig = figure('Name', 'Power coeff.', ...
     'Position', [100 100 900 350], 'Units', 'pixels');
-colors = ["r", "k", "b"];
 
-ax1 = subplot(1,2,1);  title(ax1, 'Tissue thickness 1 cm');
-xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Transmission');
+ax1 = subplot(1,2,1);  title(ax1, title_str);
+xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Transmission (dB)');
 hold(ax1, 'on');
-ax2 = subplot(1,2,2);  title(ax2, 'Tissue thickness 1 cm');
-xlabel(ax2, 'Frequency (GHz)');  ylabel(ax2, 'Reflection');
+ax2 = subplot(1,2,2);  title(ax2, title_str);
+xlabel(ax2, 'Frequency (GHz)');  ylabel(ax2, 'Reflection (dB)');
 hold(ax2, 'on');
 
 for i = 1:numel(materialNames)
     matName = materialNames{i};
-    plot(ax1, f./1e9, dBp(Tp.(matName)(1,:)), 'Color', colors(i));
-    plot(ax2, f./1e9, dBp(Rp.(matName)(1,:)), 'Color', colors(i));
+    plot(ax1, f./1e9, dBp(Tp.(matName)(ind_h,:)), 'Color', colors(i));
+    plot(ax2, f./1e9, dBp(Rp.(matName)(ind_h,:)), 'Color', colors(i));
 end
 linkaxes([ax1, ax2], 'x');  ylim(ax1, [-40, 0]);  ylim(ax2, [-16, 0]);
 
 legend(ax1, {"Low water content", "Medium water content", "High water content"}, ...
     'Location', 'best');
 % exportgraphics(fig, '../Figures/power_RT.png', 'Resolution', 300);
+
+
+%%% Compare different thickness %%%
+
+fig = figure('Name', 'Compare thickness', ...
+    'Position', [100 100 900 350], 'Units', 'pixels');
+
+ax1 = subplot(1,2,1);  title(ax1, 'Transmission');
+xlabel(ax1, 'Frequency (GHz)');  ylabel(ax1, 'Transmission (dB)');
+hold(ax1, 'on');
+ax2 = subplot(1,2,2);  title(ax2, 'Reflection');
+xlabel(ax2, 'Frequency (GHz)');  ylabel(ax2, 'Reflection (dB)');
+hold(ax2, 'on');
+
+for i = 1:length(h)
+
+    plot(ax1, f./1e9, dBp(Tp.lwc(i,:)), 'Color', colors(i));
+    plot(ax2, f./1e9, dBp(Rp.lwc(i,:)), 'Color', colors(i));
+
+end
+linkaxes([ax1, ax2], 'x');  ylim(ax1, [-20, 0]);  ylim(ax2, [-20, 0]);
+
+legend(ax1, {"1 cm", "2 cm", "5 cm"}, 'Location', 'best');
+% exportgraphics(fig, '../Figures/power_compare.png', 'Resolution', 300);
+
 
 %% Ray path
 
@@ -222,7 +248,3 @@ xr = xinc2 + (-h/2 - yr) * tand(theta_i);
 figure('Name', 'Ray paths');
 plot([0, xinc1, xinc2(1), xr(1)], y, 'k-');  hold on;
 plot([0, xinc1, xinc2(end), xr(end)], y, 'k-');
-
-
-
-
